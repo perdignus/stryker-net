@@ -45,7 +45,8 @@ namespace Stryker.Core.Mutants
                     new CheckedMutator(),
                     new LinqMutator(),
                     new StringMutator(),
-                    new InterpolatedStringMutator()
+                    new InterpolatedStringMutator(),
+                    new BlockMutator()
                 };
             _mutants = new Collection<Mutant>();
             _logger = ApplicationLogging.LoggerFactory.CreateLogger<MutantOrchestrator>();
@@ -92,6 +93,17 @@ namespace Stryker.Core.Mutants
                     ast = MutantPlacer.PlaceWithIfStatement(ast, mutatedNode, mutant.Id);
                 }
                 return ast;
+            }
+            else if (currentNode is BlockSyntax blockNode && currentNode.Kind() == SyntaxKind.Block)
+            {
+                BlockSyntax newBlockAst = currentNode as BlockSyntax;
+                foreach (var mutant in FindMutants(currentNode))
+                {
+                    _mutants.Add(mutant);
+                    BlockSyntax mutatedNode = ApplyMutant(blockNode, mutant) as BlockSyntax;
+                    newBlockAst = SyntaxFactory.Block(MutantPlacer.PlaceWithIfStatement(newBlockAst, mutatedNode, mutant.Id));
+                }
+                return newBlockAst;
             }
             else
             {
@@ -140,7 +152,7 @@ namespace Stryker.Core.Mutants
             }
         }
 
-        private T ApplyMutant<T>(T node, Mutant mutant) where T: SyntaxNode
+        private T ApplyMutant<T>(T node, Mutant mutant) where T : SyntaxNode
         {
             var mutatedNode = node.ReplaceNode(mutant.Mutation.OriginalNode, mutant.Mutation.ReplacementNode);
             return mutatedNode;

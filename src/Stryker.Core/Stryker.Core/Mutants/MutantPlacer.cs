@@ -23,15 +23,21 @@ namespace Stryker.Core.Mutants
 
         public static SyntaxTree ActiveMutantSelectorHelper => CSharpSyntaxTree.ParseText(helper);
 
-        public static IfStatementSyntax PlaceWithIfStatement(StatementSyntax original, StatementSyntax mutated, int mutantId)
+        public static IfStatementSyntax PlaceWithIfStatement(BlockSyntax original, BlockSyntax mutated, int mutantId)
         {
             // place the mutated statement inside the if statement
             return SyntaxFactory.IfStatement(
                 condition: GetBinaryExpression(mutantId),
-                statement: SyntaxFactory.Block(mutated),
-                @else: SyntaxFactory.ElseClause(SyntaxFactory.Block(original)))
+                statement: mutated,
+                @else: SyntaxFactory.ElseClause(original))
                 // Mark this node as a MutationIf node. Store the MutantId in the annotation to retrace the mutant later
                 .WithAdditionalAnnotations(new SyntaxAnnotation("MutationIf", mutantId.ToString()));
+        }
+
+        public static IfStatementSyntax PlaceWithIfStatement(StatementSyntax original, StatementSyntax mutated, int mutantId)
+        {
+            // place the mutated statement inside the if statement
+            return PlaceWithIfStatement(SyntaxFactory.Block(original), SyntaxFactory.Block(mutated), mutantId);
         }
 
         public static SyntaxNode RemoveByIfStatement(SyntaxNode node)
